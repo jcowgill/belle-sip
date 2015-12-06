@@ -426,7 +426,7 @@ int belle_http_provider_send_request(belle_http_provider_t *obj, belle_http_requ
 		if (strcasecmp(hop->transport,"tcp")==0){
 			chan=belle_sip_stream_channel_new_client(obj->stack,obj->bind_ip,0,hop->cname,hop->host,hop->port);
 		}
-#ifdef HAVE_POLARSSL
+#ifdef HAVE_MBEDTLS
 		else if (strcasecmp(hop->transport,"tls")==0){
 			chan=belle_sip_channel_new_tls(obj->stack,obj->verify_ctx,obj->bind_ip,0,hop->cname,hop->host,hop->port);
 		}

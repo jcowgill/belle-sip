@@ -80,7 +80,7 @@ static void test_proxy_authentication(void) {
 #define TEMPORARY_CERTIFICATE_DIR "/belle_sip_tester_crt"
 
 static void test_generate_and_parse_certificates(void) {
-#ifdef HAVE_POLARSSL
+#ifdef HAVE_MBEDTLS
 	belle_sip_certificates_chain_t *certificate, *parsed_certificate;
 	belle_sip_signing_key_t *key, *parsed_key;
 	char *pem_certificate, *pem_parsed_certificate, *pem_key, *pem_parsed_key;
@@ -120,7 +120,7 @@ static void test_generate_and_parse_certificates(void) {
 	belle_sip_object_unref(parsed_certificate);
 	belle_sip_object_unref(key);
 	belle_sip_object_unref(parsed_key);
-#endif /* HAVE_POLARSSL */
+#endif /* HAVE_MBEDTLS */
 }
 
 
@@ -153,7 +153,7 @@ const char* belle_sip_tester_fingerprint256_cert_fingerprint =
 		"SHA-256 A0:98:2D:3E:68:F3:14:8D:ED:50:40:DB:ED:A4:28:BC:1E:1A:6A:05:59:9E:69:3F:02:E2:F8:22:BF:4C:92:14";
 
 static void test_certificate_fingerprint(void) {
-#ifdef HAVE_POLARSSL
+#ifdef HAVE_MBEDTLS
 	char *fingerprint;
 	/* parse certificate defined in belle_sip_register_tester.c */
 	belle_sip_certificates_chain_t* cert = belle_sip_certificates_chain_parse(belle_sip_tester_client_cert,strlen(belle_sip_tester_client_cert),BELLE_SIP_CERTIFICATE_RAW_FORMAT_PEM);
@@ -177,7 +177,7 @@ static void test_certificate_fingerprint(void) {
 	belle_sip_free(fingerprint);
 	belle_sip_object_unref(cert);
 
-#endif /* HAVE_POLARSSL */
+#endif /* HAVE_MBEDTLS */
 }
 
 test_t authentication_helper_tests[] = {
