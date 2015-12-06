@@ -110,7 +110,7 @@ BELLESIP_EXPORT int belle_sip_auth_helper_compute_response_qop_auth(	const char*
  * @param callback function pointer for callback, or NULL to unset
  *
  * Callback signature is:
- * int (*verify_cb_error_cb_t)(unsigned char* der, int length, int depth, int* flags);
+ * int (*verify_cb_error_cb_t)(unsigned char *der, int length, int depth, uint32_t *flags);
  * der - raw certificate data, in DER format
  * length - length of certificate DER data
  * depth - position of certificate in cert chain, ending at 0 = root or top
