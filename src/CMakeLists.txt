@@ -72,8 +72,8 @@ if(ENABLE_TLS)
 		transports/tls_listeningpoint_polarssl.c
 		transports/tls_channel_polarssl.c
 	)
-	list(APPEND INCLUDES ${POLARSSL_INCLUDE_DIR})
-	list(APPEND LIBS ${POLARSSL_LIBRARIES})
+	list(APPEND INCLUDES ${MBEDTLS_INCLUDE_DIRS})
+	list(APPEND LIBS ${MBEDTLS_LIBRARIES})
 endif()
 
 if(ENABLE_TUNNEL)

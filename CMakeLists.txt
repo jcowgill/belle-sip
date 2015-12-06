@@ -100,9 +100,9 @@ if(ENABLE_RTP_MAP_ALWAYS_IN_SDP)
 	set(BELLE_SDP_FORCE_RTP_MAP 1)
 endif()
 if(ENABLE_TLS)
-	find_package(PolarSSL REQUIRED)
-	if(POLARSSL_FOUND)
-		set(HAVE_POLARSSL 1)
+	find_package(MbedTLS REQUIRED)
+	if(MBEDTLS_FOUND)
+		set(HAVE_MBEDTLS 1)
 	endif()
 endif()
 if(ENABLE_TUNNEL)
@@ -143,9 +143,8 @@ set(LIBS_PRIVATE "-L${antlr3c_library_path} -lantlr3c")
 if(CUNIT_FOUND)
 	set(REQUIRES_PRIVATE "${REQUIRES_PRIVATE} cunit")
 endif()
-if(HAVE_POLARSSL)
-	get_filename_component(polarssl_library_path "${POLARSSL_LIBRARIES}" PATH)
-	set(LIBS_PRIVATE "${LIBS_PRIVATE} -L${polarssl_library_path} -lpolarssl")
+if(HAVE_MBEDTLS)
+	set(LIBS_PRIVATE "${LIBS_PRIVATE} ${MBEDTLS_LIBRARIES}")
 endif()
 if(HAVE_LIBDL)
 	set(LIBS_PRIVATE "${LIBS_PRIVATE} -ldl")
@@ -162,7 +161,7 @@ include_directories(
 	src
 	${CMAKE_CURRENT_BINARY_DIR}
 	${CMAKE_CURRENT_BINARY_DIR}/src
-	${POLARSSL_INCLUDE_DIRS}
+	${MBEDTLS_INCLUDE_DIRS}
 )
 if(TUNNEL_FOUND)
 	include_directories(${TUNNEL_INCLUDE_DIRS})

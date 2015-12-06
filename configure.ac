@@ -234,53 +234,36 @@ AC_ARG_ENABLE(	tls,
 		*) AC_MSG_ERROR(bad value ${enableval} for --enable-tls) ;;
 		esac],[use_tls=true])
 
-AC_ARG_WITH( polarssl,
-      [  --with-polarssl      Set prefix where polarssl can be found (ex:/usr, /usr/local)[default=PREFIX] ],
-      [ polarssl_prefix=${withval}],[ polarssl_prefix=${prefix} ])
+AC_ARG_WITH( mbedtls,
+      [  --with-mbedtls      Set prefix where mbedTLS can be found (ex:/usr, /usr/local)[default=PREFIX] ],
+      [ mbedtls_prefix=${withval}],[ mbedtls_prefix=${prefix} ])
 
-if test "$polarssl_prefix" != "NONE" && test "$polarssl_prefix" != "/usr"; then
-	POLARSSL_CFLAGS="-I${polarssl_prefix}/include"
-	POLARSSL_LIBS="-L${polarssl_prefix}/lib"
+if test "$mbedtls_prefix" != "NONE" && test "$mbedtls_prefix" != "/usr"; then
+	MBEDTLS_CFLAGS="-I${mbedtls_prefix}/include"
+	MBEDTLS_LIBS="-L${mbedtls_prefix}/lib"
 fi
 
-found_polarssl=no
+found_mbedtls=no
 
 if test "$use_tls" = "true" ; then
-	CPPFLAGS_save=$CPPFLAGS
 	LIBS_save=$LIBS
 
-	CPPFLAGS="$CPPFLAGS $POLARSSL_CFLAGS"
-	LIBS="$LIBS $POLARSSL_LIBS"
-	AC_CHECK_LIB(mbedtls, ssl_init , [POLARSSL_LIBS="$POLARSSL_LIBS -lmbedtls"],
-					[AC_CHECK_LIB(polarssl, ssl_init, [POLARSSL_LIBS="$POLARSSL_LIBS -lpolarssl"])])
-	LIBS="$LIBS $POLARSSL_LIBS" #to add right -l
-	AC_CHECK_HEADERS(polarssl/ssl.h,
-		[
-		AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-			#include <polarssl/version.h>
-			#include <polarssl/x509.h>
-			#if POLARSSL_VERSION_NUMBER >= 0x01030000
-			#include <polarssl/compat-1.2.h>
-			#endif
-			]],
-                      	[[x509parse_crtpath(0,0)]])]
-			,[found_polarssl=yes
-			AC_MSG_NOTICE([polarssl usable])]
-			,[AC_MSG_ERROR([polarssl not found or usable but TLS support required.])])
-
-		])
-	CPPFLAGS=$CPPFLAGS_save
+	LIBS="$LIBS $MBEDTLS_LIBS"
+	AC_CHECK_LIB(mbedtls, mbedtls_ssl_setup,
+		[MBEDTLS_LIBS="$MBEDTLS_LIBS -lmbedcrypto -lmbedx509 -lmbedtls"
+		 found_mbedtls=yes],
+		[AC_MSG_ERROR([mbedTLS 2 not found])])
 	LIBS=$LIBS_save
 fi
 
-AM_CONDITIONAL([BUILD_TLS], [test "x$found_polarssl" = "xyes"])
+AM_CONDITIONAL([BUILD_TLS], [test "x$found_mbedtls" = "xyes"])
 TLS_CFLAGS=""
 TLS_LIBS=""
 TLS_PC=""
-if test "x$found_polarssl" = "xyes" ; then
-	AC_DEFINE(HAVE_POLARSSL,1,[Defined when polarssl api is available])
-	TLS_CFLAGS=$POLARSSL_CFLAGS
-	TLS_LIBS=$POLARSSL_LIBS
+if test "x$found_mbedtls" = "xyes" ; then
+	AC_DEFINE(HAVE_MBEDTLS,1,[Defined when mbedtls api is available])
+	TLS_CFLAGS=$MBEDTLS_CFLAGS
+	TLS_LIBS=$MBEDTLS_LIBS
 fi
 AC_SUBST(TLS_CFLAGS)
 AC_SUBST(TLS_LIBS)
@@ -367,7 +350,7 @@ else
 		LIBS_PRIVATE="$LIBS_PRIVATE $CUNIT_LIBS"
 	fi
 fi
-LIBS_PRIVATE="$LIBS_PRIVATE $ANTLR_LIBS $POLARSSL_LIBS"
+LIBS_PRIVATE="$LIBS_PRIVATE $ANTLR_LIBS $MBEDTLS_LIBS"
 AC_SUBST(REQUIRES_PRIVATE)
 AC_SUBST(LIBS_PRIVATE)
 
