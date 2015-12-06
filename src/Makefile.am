@@ -35,8 +35,6 @@ libbellesip_la_SOURCES=	\
 			transports/stream_channel.c \
 			transports/stream_channel.h \
 			transports/stream_listeningpoint.c \
-			transports/tls_listeningpoint_polarssl.c \
-			transports/tls_channel_polarssl.c \
 			refresher.c \
 			dns.c dns.h \
 			belle_sip_dict.c \
@@ -57,6 +55,10 @@ libbellesip_la_SOURCES+=transports/tunnel_listeningpoint.c \
 			transports/tunnel_wrapper.cc
 endif
 
+if BUILD_TLS
+libbellesip_la_SOURCES+=transports/tls_listeningpoint_polarssl.c \
+			transports/tls_channel_polarssl.c
+endif
 
 libbellesip_la_CFLAGS=$(STRICT_OPTIONS) $(STRICT_OPTIONS_CC) $(ANTLR_CFLAGS) $(TLS_CFLAGS) $(TUNNEL_CFLAGS) $(LIBBELLESIP_CFLAGS)
 libbellesip_la_CXXFLAGS=$(STRICT_OPTIONS) $(STRICT_OPTIONS_CXX) $(TLS_CFLAGS) $(TUNNEL_CFLAGS) $(LIBBELLESIP_CFLAGS)
