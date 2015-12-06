@@ -24,10 +24,6 @@
 #include "belle-sip/auth-helper.h"
 #include "belle_sip_tester.h"
 
-#ifdef HAVE_POLARSSL
-#include <polarssl/version.h>
-#endif
-
 
 static void test_authentication(void) {
 	const char* l_raw_header = "WWW-Authenticate: Digest "
@@ -85,7 +81,6 @@ static void test_proxy_authentication(void) {
 
 static void test_generate_and_parse_certificates(void) {
 #ifdef HAVE_POLARSSL
-#if POLARSSL_VERSION_NUMBER >= 0x01030000
 	belle_sip_certificates_chain_t *certificate, *parsed_certificate;
 	belle_sip_signing_key_t *key, *parsed_key;
 	char *pem_certificate, *pem_parsed_certificate, *pem_key, *pem_parsed_key;
@@ -125,7 +120,6 @@ static void test_generate_and_parse_certificates(void) {
 	belle_sip_object_unref(parsed_certificate);
 	belle_sip_object_unref(key);
 	belle_sip_object_unref(parsed_key);
-#endif /* POLARSSL_VERSION_NUMBER >= 0x01030000 */
 #endif /* HAVE_POLARSSL */
 }
 
@@ -160,7 +154,6 @@ const char* belle_sip_tester_fingerprint256_cert_fingerprint =
 
 static void test_certificate_fingerprint(void) {
 #ifdef HAVE_POLARSSL
-#if POLARSSL_VERSION_NUMBER >= 0x01030000
 	char *fingerprint;
 	/* parse certificate defined in belle_sip_register_tester.c */
 	belle_sip_certificates_chain_t* cert = belle_sip_certificates_chain_parse(belle_sip_tester_client_cert,strlen(belle_sip_tester_client_cert),BELLE_SIP_CERTIFICATE_RAW_FORMAT_PEM);
@@ -184,7 +177,6 @@ static void test_certificate_fingerprint(void) {
 	belle_sip_free(fingerprint);
 	belle_sip_object_unref(cert);
 
-#endif /* POLARSSL_VERSION_NUMBER >= 0x01030000 */
 #endif /* HAVE_POLARSSL */
 }
 
