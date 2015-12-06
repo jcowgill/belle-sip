@@ -470,7 +470,7 @@ static const char *polarssl_certflags_to_string(char *buf, size_t size, int flag
 	if (i<size && (flags & BADCRL_NOT_TRUSTED))
 		i+=snprintf(buf+i,size-i,"crl-not-trusted ");
 	if (i<size && (flags & BADCRL_EXPIRED))
-		i+=snprintf(buf+i,size-i,"crl-not-expired ");
+		i+=snprintf(buf+i,size-i,"crl-expired ");
 	return buf;
 }
 
