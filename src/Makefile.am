@@ -56,8 +56,8 @@ libbellesip_la_SOURCES+=transports/tunnel_listeningpoint.c \
 endif
 
 if BUILD_TLS
-libbellesip_la_SOURCES+=transports/tls_listeningpoint_polarssl.c \
-			transports/tls_channel_polarssl.c
+libbellesip_la_SOURCES+=transports/tls_listeningpoint_mbedtls.c \
+			transports/tls_channel_mbedtls.c
 endif
 
 libbellesip_la_CFLAGS=$(STRICT_OPTIONS) $(STRICT_OPTIONS_CC) $(ANTLR_CFLAGS) $(TLS_CFLAGS) $(TUNNEL_CFLAGS) $(LIBBELLESIP_CFLAGS)

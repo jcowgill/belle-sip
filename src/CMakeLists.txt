@@ -69,8 +69,8 @@ set_source_files_properties(${SDP_GENERATED_SOURCE_FILES_C} ${SIP_MESSAGE_GENERA
 
 if(ENABLE_TLS)
 	set(TLS_SOURCE_FILES_C
-		transports/tls_listeningpoint_polarssl.c
-		transports/tls_channel_polarssl.c
+		transports/tls_listeningpoint_mbedtls.c
+		transports/tls_channel_mbedtls.c
 	)
 	list(APPEND INCLUDES ${MBEDTLS_INCLUDE_DIRS})
 	list(APPEND LIBS ${MBEDTLS_LIBRARIES})

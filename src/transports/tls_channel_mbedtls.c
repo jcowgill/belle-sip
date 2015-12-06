@@ -368,7 +368,7 @@ process_error:
 	return BELLE_SIP_STOP;
 }
 
-static int polarssl_read(void * ctx, unsigned char *buf, size_t len ){
+static int mbedtls_read(void * ctx, unsigned char *buf, size_t len ){
 	belle_sip_stream_channel_t *super=(belle_sip_stream_channel_t *)ctx;
 	
 	int ret = stream_channel_recv(super,buf,len);
@@ -382,7 +382,7 @@ static int polarssl_read(void * ctx, unsigned char *buf, size_t len ){
 	return ret;
 }
 
-static int polarssl_write(void * ctx, const unsigned char *buf, size_t len ){
+static int mbedtls_write(void * ctx, const unsigned char *buf, size_t len ){
 	belle_sip_stream_channel_t *super=(belle_sip_stream_channel_t *)ctx;
 	
 	int ret = stream_channel_send(super, buf, len);
@@ -401,7 +401,7 @@ static int random_generator(void *ctx, unsigned char *ptr, size_t size){
 	return 0;
 }
 
-static const char *polarssl_certflags_to_string(char *buf, size_t size, int flags){
+static const char *mbedtls_certflags_to_string(char *buf, size_t size, int flags){
 	size_t i=0;
 	
 	memset(buf,0,size);
@@ -424,7 +424,7 @@ static const char *polarssl_certflags_to_string(char *buf, size_t size, int flag
 	return buf;
 }
 
-// shim the default PolarSSL certificate handling by adding an external callback
+// shim the default mbedTLS certificate handling by adding an external callback
 // see "verify_cb_error_cb_t" for the function signature
 int belle_sip_tls_set_verify_error_cb(void * callback)
 {
@@ -440,11 +440,11 @@ int belle_sip_tls_set_verify_error_cb(void * callback)
 
 //
 // Augment certificate verification with certificates stored outside rootca.pem
-// PolarSSL calls the verify_cb with each cert in the chain; flags apply to the
+// mbedTLS calls the verify_cb with each cert in the chain; flags apply to the
 // current certificate until depth is 0;
 //
 // NOTES:
-// 1) rootca.pem *must* have at least one valid certificate, or PolarSSL
+// 1) rootca.pem *must* have at least one valid certificate, or mbedTLS
 // does not attempt to verify any certificates
 // 2) callback must return 0; non-zero indicates that the verification process failed
 // 3) flags should be saved off and cleared for each certificate where depth>0
@@ -491,7 +491,7 @@ static int belle_sip_ssl_verify(void *data, mbedtls_x509_crt *cert, int depth, u
 	
 	mbedtls_x509_crt_info(tmp,tmp_size-1,"",cert);
 	belle_sip_message("Found certificate depth=[%i], flags=[%s]:\n%s",
-		depth,polarssl_certflags_to_string(flags_str,flags_str_size-1,*flags),tmp);
+		depth,mbedtls_certflags_to_string(flags_str,flags_str_size-1,*flags),tmp);
 	if (verify_ctx->exception_flags==BELLE_TLS_VERIFY_ANY_REASON){
 		*flags=0;
 	}else if (verify_ctx->exception_flags & BELLE_TLS_VERIFY_CN_MISMATCH){
@@ -528,7 +528,7 @@ static int belle_sip_tls_channel_load_root_ca(belle_sip_tls_channel_t *obj, cons
 
 #ifdef MBEDTLS_DEBUG_LEVEL
 /*
- * polarssl does a lot of logs, some with newline, some without.
+ * mbedtls does a lot of logs, some with newline, some without.
  * We need to concatenate logs without new line until a new line is found.
  */
 static void ssl_debug_to_belle_sip(void *context, int level, const char* file, int line, const char *str){
@@ -580,7 +580,7 @@ belle_sip_channel_t * belle_sip_channel_new_tls(belle_sip_stack_t *stack, belle_
 
 	mbedtls_ssl_init(&obj->sslctx);
 	mbedtls_ssl_setup(&obj->sslctx, &obj->sslconf);
-	mbedtls_ssl_set_bio(&obj->sslctx, obj, polarssl_write, polarssl_read, NULL);
+	mbedtls_ssl_set_bio(&obj->sslctx, obj, mbedtls_write, mbedtls_read, NULL);
 	mbedtls_ssl_set_hostname(&obj->sslctx, super->base.peer_cname ? super->base.peer_cname : super->base.peer_name);
 
 	obj->verify_ctx = (belle_tls_verify_policy_t *)belle_sip_object_ref(verify_ctx);
@@ -678,7 +678,7 @@ int belle_sip_get_certificate_and_pkey_in_dir(const char *path, const char *subj
 			belle_sip_signing_key_t *found_key;
 			char name[500];
 			memset( name, 0, sizeof(name) );
-			mbedtls_x509_dn_gets( name, sizeof(name), &(found_certificate->cert.subject)); /* this function is available only in polarssl version >=1.3 */
+			mbedtls_x509_dn_gets( name, sizeof(name), &(found_certificate->cert.subject));
 			/* parse subject to find the CN=xxx, field. There may be no , at the and but a \0 */
 			subject_CNAME_begin = strstr(name, "CN=");
 			if (subject_CNAME_begin!=NULL) {
