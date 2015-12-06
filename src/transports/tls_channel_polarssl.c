@@ -21,27 +21,27 @@
 
 /* Uncomment to get very verbose polarssl logs*/
 //#define ENABLE_POLARSSL_LOGS
-#include <polarssl/ssl.h>
-#include <polarssl/version.h>
-#include <polarssl/error.h>
-#include <polarssl/pem.h>
-#include "polarssl/base64.h"
-#include <polarssl/x509.h>
-#include <polarssl/entropy.h>
-#include <polarssl/ctr_drbg.h>
-#include <polarssl/sha1.h>
-#include <polarssl/sha256.h>
-#include <polarssl/sha512.h>
+#include <mbedtls/ssl.h>
+#include <mbedtls/version.h>
+#include <mbedtls/error.h>
+#include <mbedtls/pem.h>
+#include "mbedtls/base64.h"
+#include <mbedtls/x509.h>
+#include <mbedtls/entropy.h>
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/sha1.h>
+#include <mbedtls/sha256.h>
+#include <mbedtls/sha512.h>
 
 
 struct belle_sip_certificates_chain {
 	belle_sip_object_t objet;
-	x509_crt cert;
+	mbedtls_x509_crt cert;
 };
 
 struct belle_sip_signing_key {
 	belle_sip_object_t objet;
-	pk_context key;
+	mbedtls_pk_context key;
 };
 
 
@@ -54,7 +54,7 @@ char *belle_sip_certificates_chain_get_pem(belle_sip_certificates_chain_t *cert)
 	if (cert == NULL) return NULL;
 
 	pem_certificate = (char*)belle_sip_malloc(4096);
-	pem_write_buffer("-----BEGIN CERTIFICATE-----\n", "-----END CERTIFICATE-----\n", cert->cert.raw.p, cert->cert.raw.len, (unsigned char*)pem_certificate, 4096, &olen );
+	mbedtls_pem_write_buffer("-----BEGIN CERTIFICATE-----\n", "-----END CERTIFICATE-----\n", cert->cert.raw.p, cert->cert.raw.len, (unsigned char*)pem_certificate, 4096, &olen );
 	return pem_certificate;
 }
 
@@ -62,7 +62,7 @@ char *belle_sip_signing_key_get_pem(belle_sip_signing_key_t *key) {
 	char *pem_key;
 	if (key == NULL) return NULL;
 	pem_key = (char *)belle_sip_malloc(4096);
-	pk_write_key_pem( &(key->key), (unsigned char *)pem_key, 4096);
+	mbedtls_pk_write_key_pem( &(key->key), (unsigned char *)pem_key, 4096);
 	return pem_key;
 }
 
@@ -79,8 +79,8 @@ static int tls_process_data(belle_sip_channel_t *obj,unsigned int revents);
 
 struct belle_sip_tls_channel{
 	belle_sip_stream_channel_t base;
-	ssl_context sslctx;
-	x509_crt root_ca;
+	mbedtls_ssl_context sslctx;
+	mbedtls_x509_crt root_ca;
 	struct sockaddr_storage ss;
 	socklen_t socklen;
 	int socket_connected;
@@ -95,9 +95,9 @@ struct belle_sip_tls_channel{
 static void tls_channel_close(belle_sip_tls_channel_t *obj){
 	belle_sip_socket_t sock = belle_sip_source_get_socket((belle_sip_source_t*)obj);
 	if (sock!=-1 && belle_sip_channel_get_state((belle_sip_channel_t*)obj)!=BELLE_SIP_CHANNEL_ERROR)
-		ssl_close_notify(&obj->sslctx);
+		mbedtls_ssl_close_notify(&obj->sslctx);
 	stream_channel_close((belle_sip_stream_channel_t*)obj);
-	ssl_session_reset(&obj->sslctx);
+	mbedtls_ssl_session_reset(&obj->sslctx);
 	obj->socket_connected=0;
 }
 
@@ -105,8 +105,8 @@ static void tls_channel_uninit(belle_sip_tls_channel_t *obj){
 	belle_sip_socket_t sock = belle_sip_source_get_socket((belle_sip_source_t*)obj);
 	if (sock!=(belle_sip_socket_t)-1)
 		tls_channel_close(obj);
-	ssl_free(&obj->sslctx);
-	x509_crt_free(&obj->root_ca);
+	mbedtls_ssl_free(&obj->sslctx);
+	mbedtls_x509_crt_free(&obj->root_ca);
 	if (obj->cur_debug_msg)
 		belle_sip_free(obj->cur_debug_msg);
 	belle_sip_object_unref(obj->verify_ctx);
@@ -117,11 +117,11 @@ static void tls_channel_uninit(belle_sip_tls_channel_t *obj){
 
 static int tls_channel_send(belle_sip_channel_t *obj, const void *buf, size_t buflen){
 	belle_sip_tls_channel_t* channel = (belle_sip_tls_channel_t*)obj;
-	int err = ssl_write(&channel->sslctx,buf,buflen);
+	int err = mbedtls_ssl_write(&channel->sslctx,buf,buflen);
 	if (err<0){
 		char tmp[256]={0};
-		if (err==POLARSSL_ERR_NET_WANT_WRITE) return -BELLESIP_EWOULDBLOCK;
-		error_strerror(err,tmp,sizeof(tmp));
+		if (err==MBEDTLS_ERR_SSL_WANT_WRITE) return -BELLESIP_EWOULDBLOCK;
+		mbedtls_strerror(err,tmp,sizeof(tmp));
 		belle_sip_error("Channel [%p]: ssl_write() error [%i]: %s",obj,err,tmp);
 	}
 	return err;
@@ -129,12 +129,12 @@ static int tls_channel_send(belle_sip_channel_t *obj, const void *buf, size_t bu
 
 static int tls_channel_recv(belle_sip_channel_t *obj, void *buf, size_t buflen){
 	belle_sip_tls_channel_t* channel = (belle_sip_tls_channel_t*)obj;
-	int err = ssl_read(&channel->sslctx,buf,buflen);
-	if (err==POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY) return 0;
+	int err = mbedtls_ssl_read(&channel->sslctx,buf,buflen);
+	if (err==MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) return 0;
 	if (err<0){
 		char tmp[256]={0};
-		if (err==POLARSSL_ERR_NET_WANT_READ) return -BELLESIP_EWOULDBLOCK;
-		error_strerror(err,tmp,sizeof(tmp));
+		if (err==MBEDTLS_ERR_SSL_WANT_READ) return -BELLESIP_EWOULDBLOCK;
+		mbedtls_strerror(err,tmp,sizeof(tmp));
 		belle_sip_error("Channel [%p]: ssl_read() error [%i]: %s",obj, err, tmp);
 	}
 	return err;
@@ -204,11 +204,11 @@ BELLE_SIP_INSTANCIATE_CUSTOM_VPTR_END
 
 static int tls_channel_handshake(belle_sip_tls_channel_t *channel) {
 	int ret;
-	while( channel->sslctx.state != SSL_HANDSHAKE_OVER ) {
-		if ((ret = ssl_handshake_step( &channel->sslctx ))) {
+	while( channel->sslctx.state != MBEDTLS_SSL_HANDSHAKE_OVER ) {
+		if ((ret = mbedtls_ssl_handshake_step( &channel->sslctx ))) {
 			break;
 		}
-		if (channel->sslctx.state == SSL_CLIENT_CERTIFICATE && channel->sslctx.client_auth >0) {
+		if (channel->sslctx.state == MBEDTLS_SSL_CLIENT_CERTIFICATE && channel->sslctx.client_auth >0) {
 			BELLE_SIP_INVOKE_LISTENERS_ARG1_ARG2(	channel->base.base.listeners
 					,belle_sip_channel_listener_t
 					,on_auth_requested
@@ -218,15 +218,15 @@ static int tls_channel_handshake(belle_sip_tls_channel_t *channel) {
 			if (channel->client_cert_chain && channel->client_cert_key) {
 				int err;
 				char tmp[512]={0};
-				x509_crt_info(tmp,sizeof(tmp)-1,"",&channel->client_cert_chain->cert);
+				mbedtls_x509_crt_info(tmp,sizeof(tmp)-1,"",&channel->client_cert_chain->cert);
 				belle_sip_message("Channel [%p]  found client  certificate:\n%s",channel,tmp);
                                 /* allows public keys other than RSA */
-				if ((err=ssl_set_own_cert(&channel->sslctx,&channel->client_cert_chain->cert,&channel->client_cert_key->key))) {
-					error_strerror(err,tmp,sizeof(tmp)-1);
+				if ((err=mbedtls_ssl_conf_own_cert(&channel->sslctx,&channel->client_cert_chain->cert,&channel->client_cert_key->key))) {
+					mbedtls_strerror(err,tmp,sizeof(tmp)-1);
 					belle_sip_error("Channel [%p] cannot ssl_set_own_cert [%s]",channel,tmp);
 				}
 
-				/*update own cert see ssl_handshake frompolarssl*/
+				/*update own cert see mbedtls_ssl_handshake frompolarssl*/
 				channel->sslctx.handshake->key_cert = channel->sslctx.key_cert;
 			}
 		}
@@ -242,11 +242,11 @@ static int tls_process_handshake(belle_sip_channel_t *obj){
 		belle_sip_message("Channel [%p]: SSL handshake finished.",obj);
 		belle_sip_source_set_timeout((belle_sip_source_t*)obj,-1);
 		belle_sip_channel_set_ready(obj,(struct sockaddr*)&channel->ss,channel->socklen);
-	}else if (err==POLARSSL_ERR_NET_WANT_READ || err==POLARSSL_ERR_NET_WANT_WRITE){
+	}else if (err==MBEDTLS_ERR_SSL_WANT_READ || err==MBEDTLS_ERR_SSL_WANT_WRITE){
 		belle_sip_message("Channel [%p]: SSL handshake in progress...",obj);
 	}else{
 		char tmp[128];
-		error_strerror(err,tmp,sizeof(tmp));
+		mbedtls_strerror(err,tmp,sizeof(tmp));
 		belle_sip_error("Channel [%p]: SSL handshake failed : %s",obj,tmp);
 		return -1;
 	}
@@ -271,7 +271,7 @@ static int tls_process_http_connect(belle_sip_tls_channel_t *obj) {
 		size_t username_passwd_length = strlen(username_passwd);
 		size_t encoded_username_paswd_length = username_passwd_length*2;
 		unsigned char *encoded_username_paswd = belle_sip_malloc(2*username_passwd_length);
-		base64_encode(encoded_username_paswd,&encoded_username_paswd_length,(const unsigned char *)username_passwd,username_passwd_length);
+		mbedtls_base64_encode(encoded_username_paswd,&encoded_username_paswd_length,(const unsigned char *)username_passwd,username_passwd_length);
 		request = belle_sip_strcat_printf(request, "Proxy-Authorization: Basic %s\r\n",encoded_username_paswd);
 		belle_sip_free(username_passwd);
 		belle_sip_free(encoded_username_paswd);
@@ -373,8 +373,8 @@ static int polarssl_read(void * ctx, unsigned char *buf, size_t len ){
 	if (ret<0){
 		ret=-ret;
 		if (ret==BELLESIP_EWOULDBLOCK || ret==BELLESIP_EINPROGRESS || ret == EINTR )
-			return POLARSSL_ERR_NET_WANT_READ;
-		return POLARSSL_ERR_NET_CONN_RESET;
+			return MBEDTLS_ERR_SSL_WANT_READ;
+		return MBEDTLS_ERR_NET_CONN_RESET;
 	}
 	return ret;
 }
@@ -387,8 +387,8 @@ static int polarssl_write(void * ctx, const unsigned char *buf, size_t len ){
 	if (ret<0){
 		ret=-ret;
 		if (ret==BELLESIP_EWOULDBLOCK || ret==BELLESIP_EINPROGRESS || ret == EINTR )
-			return POLARSSL_ERR_NET_WANT_WRITE;
-		return POLARSSL_ERR_NET_CONN_RESET;
+			return MBEDTLS_ERR_SSL_WANT_WRITE;
+		return MBEDTLS_ERR_NET_CONN_RESET;
 	}
 	return ret;
 }
@@ -404,19 +404,19 @@ static const char *polarssl_certflags_to_string(char *buf, size_t size, int flag
 	memset(buf,0,size);
 	size--;
 	
-	if (i<size && (flags & BADCERT_EXPIRED))
+	if (i<size && (flags & MBEDTLS_X509_BADCERT_EXPIRED))
 		i+=snprintf(buf+i,size-i,"expired ");
-	if (i<size && (flags & BADCERT_REVOKED))
+	if (i<size && (flags & MBEDTLS_X509_BADCERT_REVOKED))
 		i+=snprintf(buf+i,size-i,"revoked ");
-	if (i<size && (flags & BADCERT_CN_MISMATCH))
+	if (i<size && (flags & MBEDTLS_X509_BADCERT_CN_MISMATCH))
 		i+=snprintf(buf+i,size-i,"CN-mismatch ");
-	if (i<size && (flags & BADCERT_NOT_TRUSTED))
+	if (i<size && (flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED))
 		i+=snprintf(buf+i,size-i,"not-trusted ");
-	if (i<size && (flags & BADCERT_MISSING))
+	if (i<size && (flags & MBEDTLS_X509_BADCERT_MISSING))
 		i+=snprintf(buf+i,size-i,"missing ");
-	if (i<size && (flags & BADCRL_NOT_TRUSTED))
+	if (i<size && (flags & MBEDTLS_X509_BADCRL_NOT_TRUSTED))
 		i+=snprintf(buf+i,size-i,"crl-not-trusted ");
-	if (i<size && (flags & BADCRL_EXPIRED))
+	if (i<size && (flags & MBEDTLS_X509_BADCRL_EXPIRED))
 		i+=snprintf(buf+i,size-i,"crl-expired ");
 	return buf;
 }
@@ -449,7 +449,7 @@ int belle_sip_tls_set_verify_error_cb(void * callback)
 // 5) callback must disable calls to linphone_core_iterate while running
 //
 
-int belle_sip_verify_cb_error_wrapper(x509_crt *cert, int depth, int *flags){
+int belle_sip_verify_cb_error_wrapper(mbedtls_x509_crt *cert, int depth, int *flags){
 	int rc = 0;
 	unsigned char *der = NULL;
 
@@ -479,20 +479,20 @@ int belle_sip_verify_cb_error_wrapper(x509_crt *cert, int depth, int *flags){
 }
 
 
-static int belle_sip_ssl_verify(void *data , x509_crt *cert , int depth, int *flags){
+static int belle_sip_ssl_verify(void *data , mbedtls_x509_crt *cert , int depth, int *flags){
 	belle_tls_verify_policy_t *verify_ctx=(belle_tls_verify_policy_t*)data;
 	const int tmp_size = 2048, flags_str_size = 256;
 	char *tmp = belle_sip_malloc0(tmp_size);
 	char *flags_str = belle_sip_malloc0(flags_str_size);
 	int ret;
 	
-	x509_crt_info(tmp,tmp_size-1,"",cert);
+	mbedtls_x509_crt_info(tmp,tmp_size-1,"",cert);
 	belle_sip_message("Found certificate depth=[%i], flags=[%s]:\n%s",
 		depth,polarssl_certflags_to_string(flags_str,flags_str_size-1,*flags),tmp);
 	if (verify_ctx->exception_flags==BELLE_TLS_VERIFY_ANY_REASON){
 		*flags=0;
 	}else if (verify_ctx->exception_flags & BELLE_TLS_VERIFY_CN_MISMATCH){
-		*flags&=~BADCERT_CN_MISMATCH;
+		*flags&=~MBEDTLS_X509_BADCERT_CN_MISMATCH;
 	}
 
 	ret = belle_sip_verify_cb_error_wrapper(cert, depth, flags);
@@ -507,12 +507,12 @@ static int belle_sip_tls_channel_load_root_ca(belle_sip_tls_channel_t *obj, cons
 	struct stat statbuf; 
 	if (stat(path,&statbuf)==0){
 		if (statbuf.st_mode & S_IFDIR){
-			if (x509_crt_parse_path(&obj->root_ca,path)<0){
+			if (mbedtls_x509_crt_parse_path(&obj->root_ca,path)<0){
 				belle_sip_error("Failed to load root ca from directory %s",path);
 				return -1;
 			}
 		}else{
-			if (x509_crt_parse_file(&obj->root_ca,path)<0){
+			if (mbedtls_x509_crt_parse_file(&obj->root_ca,path)<0){
 				belle_sip_error("Failed to load root ca from file %s",path);
 				return -1;
 			}
@@ -560,18 +560,18 @@ belle_sip_channel_t * belle_sip_channel_new_tls(belle_sip_stack_t *stack, belle_
 	belle_sip_stream_channel_init_client(super
 					,stack
 					,bindip,localport,peer_cname,dest,port);
-	ssl_init(&obj->sslctx);
+	mbedtls_ssl_init(&obj->sslctx);
 #ifdef ENABLE_POLARSSL_LOGS
-	ssl_set_dbg(&obj->sslctx,ssl_debug_to_belle_sip,obj);
+	mbedtls_ssl_conf_dbg(&obj->sslctx,ssl_debug_to_belle_sip,obj);
 #endif
-	ssl_set_endpoint(&obj->sslctx,SSL_IS_CLIENT);
-	ssl_set_authmode(&obj->sslctx,SSL_VERIFY_REQUIRED);
-	ssl_set_bio(&obj->sslctx,polarssl_read,obj,polarssl_write,obj);
+	mbedtls_ssl_conf_endpoint(&obj->sslctx,MBEDTLS_SSL_IS_CLIENT);
+	mbedtls_ssl_conf_authmode(&obj->sslctx,MBEDTLS_SSL_VERIFY_REQUIRED);
+	mbedtls_ssl_set_bio(&obj->sslctx,polarssl_read,obj,polarssl_write,obj);
 	if (verify_ctx->root_ca && belle_sip_tls_channel_load_root_ca(obj,verify_ctx->root_ca)==0){
-		ssl_set_ca_chain(&obj->sslctx,&obj->root_ca,NULL,super->base.peer_cname ? super->base.peer_cname : super->base.peer_name );
+		mbedtls_ssl_conf_ca_chain(&obj->sslctx,&obj->root_ca,NULL,super->base.peer_cname ? super->base.peer_cname : super->base.peer_name );
 	}
-	ssl_set_rng(&obj->sslctx,random_generator,NULL);
-	ssl_set_verify(&obj->sslctx,belle_sip_ssl_verify,verify_ctx);
+	mbedtls_ssl_conf_rng(&obj->sslctx,random_generator,NULL);
+	mbedtls_ssl_conf_verify(&obj->sslctx,belle_sip_ssl_verify,verify_ctx);
 	obj->verify_ctx=(belle_tls_verify_policy_t*)belle_sip_object_ref(verify_ctx);
 	return (belle_sip_channel_t*)obj;
 }
@@ -593,9 +593,9 @@ void belle_sip_tls_channel_set_client_certificate_key(belle_sip_tls_channel_t *c
 
 static int belle_sip_certificate_fill(belle_sip_certificates_chain_t* certificate,const char* buff, size_t size,belle_sip_certificate_raw_format_t format) {
 	int err;
-	if ((err=x509_crt_parse(&certificate->cert,(const unsigned char *)buff,size)) <0) {
+	if ((err=mbedtls_x509_crt_parse(&certificate->cert,(const unsigned char *)buff,size)) <0) {
 		char tmp[128];
-		error_strerror(err,tmp,sizeof(tmp));
+		mbedtls_strerror(err,tmp,sizeof(tmp));
 		belle_sip_error("cannot parse x509 cert because [%s]",tmp);
 		return -1;
 	}
@@ -604,9 +604,9 @@ static int belle_sip_certificate_fill(belle_sip_certificates_chain_t* certificat
 
 static int belle_sip_certificate_fill_from_file(belle_sip_certificates_chain_t* certificate,const char* path,belle_sip_certificate_raw_format_t format) {
 	int err;
-	if ((err=x509_crt_parse_file(&certificate->cert, path)) <0) {
+	if ((err=mbedtls_x509_crt_parse_file(&certificate->cert, path)) <0) {
 		char tmp[128];
-		error_strerror(err,tmp,sizeof(tmp));
+		mbedtls_strerror(err,tmp,sizeof(tmp));
 		belle_sip_error("cannot parse x509 cert because [%s]",tmp);
 		return -1;
 	}
@@ -653,7 +653,7 @@ int belle_sip_get_certificate_and_pkey_in_dir(const char *path, const char *subj
 			belle_sip_signing_key_t *found_key;
 			char name[500];
 			memset( name, 0, sizeof(name) );
-			x509_dn_gets( name, sizeof(name), &(found_certificate->cert.subject)); /* this function is available only in polarssl version >=1.3 */
+			mbedtls_x509_dn_gets( name, sizeof(name), &(found_certificate->cert.subject)); /* this function is available only in polarssl version >=1.3 */
 			/* parse subject to find the CN=xxx, field. There may be no , at the and but a \0 */
 			subject_CNAME_begin = strstr(name, "CN=");
 			if (subject_CNAME_begin!=NULL) {
@@ -682,11 +682,11 @@ int belle_sip_get_certificate_and_pkey_in_dir(const char *path, const char *subj
 }
 
 int belle_sip_generate_self_signed_certificate(const char* path, const char *subject, belle_sip_certificates_chain_t **certificate, belle_sip_signing_key_t **pkey) {
-	entropy_context entropy;
-	ctr_drbg_context ctr_drbg;
+	mbedtls_entropy_context entropy;
+	mbedtls_ctr_drbg_context ctr_drbg;
 	int ret;
-	mpi serial;
-	x509write_cert crt;
+	mbedtls_mpi serial;
+	mbedtls_x509write_cert crt;
 	FILE *fd;
 	char file_buffer[8192];
 	size_t file_buffer_len = 0;
@@ -702,74 +702,74 @@ int belle_sip_generate_self_signed_certificate(const char* path, const char *sub
 	*pkey = belle_sip_object_new(belle_sip_signing_key_t);
 	*certificate = belle_sip_object_new(belle_sip_certificates_chain_t);
 
-	entropy_init( &entropy );
-	if( ( ret = ctr_drbg_init( &ctr_drbg, entropy_func, &entropy, NULL, 0 ) )   != 0 )
+	mbedtls_entropy_init( &entropy );
+	if( ( ret = mbedtls_ctr_drbg_init( &ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0 ) )   != 0 )
 	{
 		belle_sip_error("Certificate generation can't init ctr_drbg: -%x", -ret);
 		return -1;
 	}
 
 	/* generate 3072 bits RSA public/private key */
-	pk_init( &((*pkey)->key) );
-	if ( (ret = pk_init_ctx( &((*pkey)->key), pk_info_from_type( POLARSSL_PK_RSA ) )) != 0) {
+	mbedtls_pk_init( &((*pkey)->key) );
+	if ( (ret = mbedtls_pk_setup( &((*pkey)->key), mbedtls_pk_info_from_type( MBEDTLS_PK_RSA ) )) != 0) {
 		belle_sip_error("Certificate generation can't init pk_ctx: -%x", -ret);
 		return -1;
 	}
-	if ( ( ret = rsa_gen_key( pk_rsa( (*pkey)->key ), ctr_drbg_random, &ctr_drbg, 3072, 65537 ) ) != 0) {
+	if ( ( ret = mbedtls_rsa_gen_key( mbedtls_pk_rsa( (*pkey)->key ), mbedtls_ctr_drbg_random, &ctr_drbg, 3072, 65537 ) ) != 0) {
 		belle_sip_error("Certificate generation can't generate rsa key: -%x", -ret);
 		return -1;
 	}
 
 	/* if there is no path, don't write a file */
 	if (path!=NULL) {
-		pk_write_key_pem( &((*pkey)->key), (unsigned char *)file_buffer, 4096);
+		mbedtls_pk_write_key_pem( &((*pkey)->key), (unsigned char *)file_buffer, 4096);
 		file_buffer_len = strlen(file_buffer);
 	}
 
 	/* generate the certificate */
-	x509write_crt_init( &crt );
-	x509write_crt_set_md_alg( &crt, POLARSSL_MD_SHA256 );
+	mbedtls_x509write_crt_init( &crt );
+	mbedtls_x509write_crt_set_md_alg( &crt, MBEDTLS_MD_SHA256 );
 
-	mpi_init( &serial );
+	mbedtls_mpi_init( &serial );
 
-	if ( (ret = mpi_read_string( &serial, 10, "1" ) ) != 0 ) {
+	if ( (ret = mbedtls_mpi_read_string( &serial, 10, "1" ) ) != 0 ) {
 		belle_sip_error("Certificate generation can't read serial mpi: -%x", -ret);
 		return -1;
 	}
 
-	x509write_crt_set_subject_key( &crt, &((*pkey)->key) );
-	x509write_crt_set_issuer_key( &crt, &((*pkey)->key) );
+	mbedtls_x509write_crt_set_subject_key( &crt, &((*pkey)->key) );
+	mbedtls_x509write_crt_set_issuer_key( &crt, &((*pkey)->key) );
 
-	if ( (ret = x509write_crt_set_subject_name( &crt, formatted_subject) ) != 0) {
+	if ( (ret = mbedtls_x509write_crt_set_subject_name( &crt, formatted_subject) ) != 0) {
 		belle_sip_error("Certificate generation can't set subject name: -%x", -ret);
 		return -1;
 	}
 
-	if ( (ret = x509write_crt_set_issuer_name( &crt, formatted_subject) ) != 0) {
+	if ( (ret = mbedtls_x509write_crt_set_issuer_name( &crt, formatted_subject) ) != 0) {
 		belle_sip_error("Certificate generation can't set issuer name: -%x", -ret);
 		return -1;
 	}
 
-	if ( (ret = x509write_crt_set_serial( &crt, &serial ) ) != 0) {
+	if ( (ret = mbedtls_x509write_crt_set_serial( &crt, &serial ) ) != 0) {
 		belle_sip_error("Certificate generation can't set serial: -%x", -ret);
 		return -1;
 	}
-	mpi_free(&serial);
+	mbedtls_mpi_free(&serial);
 
-	if ( (ret = x509write_crt_set_validity( &crt, "20010101000000", "20300101000000" ) ) != 0) {
+	if ( (ret = mbedtls_x509write_crt_set_validity( &crt, "20010101000000", "20300101000000" ) ) != 0) {
 		belle_sip_error("Certificate generation can't set validity: -%x", -ret);
 		return -1;
 	}
 
-	/* store anyway certificate in pem format in a string even if we do not have file to write as we need it to get it in a x509_crt structure */
-	if ( (ret = x509write_crt_pem( &crt, (unsigned char *)file_buffer+file_buffer_len, 4096, ctr_drbg_random, &ctr_drbg ) ) != 0) {
+	/* store anyway certificate in pem format in a string even if we do not have file to write as we need it to get it in a mbedtls_x509_crt structure */
+	if ( (ret = mbedtls_x509write_crt_pem( &crt, (unsigned char *)file_buffer+file_buffer_len, 4096, mbedtls_ctr_drbg_random, &ctr_drbg ) ) != 0) {
 		belle_sip_error("Certificate generation can't write crt pem: -%x", -ret);
 		return -1;
 	}
 
-	x509write_crt_free(&crt);
+	mbedtls_x509write_crt_free(&crt);
 
-	if ( (ret = x509_crt_parse(&((*certificate)->cert), (unsigned char *)file_buffer, strlen(file_buffer)) ) != 0) {
+	if ( (ret = mbedtls_x509_crt_parse(&((*certificate)->cert), (unsigned char *)file_buffer, strlen(file_buffer)) ) != 0) {
 		belle_sip_error("Certificate generation can't parse crt pem: -%x", -ret);
 		return -1;
 	}
@@ -813,44 +813,44 @@ int belle_sip_generate_self_signed_certificate(const char* path, const char *sub
 	return 0;
 }
 
-/* Note : this code is duplicated in mediastreamer2/src/voip/dtls_srtp.c but get directly a x509_crt as input parameter */
+/* Note : this code is duplicated in mediastreamer2/src/voip/dtls_srtp.c but get directly a mbedtls_x509_crt as input parameter */
 char *belle_sip_certificates_chain_get_fingerprint(belle_sip_certificates_chain_t *certificate) {
 	unsigned char buffer[64]={0}; /* buffer is max length of returned hash, which is 64 in case we use sha-512 */
 	size_t hash_length = 0;
 	const char *hash_alg_string=NULL;
 	char *fingerprint = NULL;
-	x509_crt *crt;
+	mbedtls_x509_crt *crt;
 	if (certificate == NULL) return NULL;
 
 	crt = &certificate->cert;
 	/* fingerprint is a hash of the DER formated certificate (found in crt->raw.p) using the same hash function used by certificate signature */
 	switch (crt->sig_md) {
-		case POLARSSL_MD_SHA1:
-			sha1(crt->raw.p, crt->raw.len, buffer);
+		case MBEDTLS_MD_SHA1:
+			mbedtls_sha1(crt->raw.p, crt->raw.len, buffer);
 			hash_length = 20;
 			hash_alg_string="SHA-1";
 		break;
 
-		case POLARSSL_MD_SHA224:
-			sha256(crt->raw.p, crt->raw.len, buffer, 1); /* last argument is a boolean, indicate to output sha-224 and not sha-256 */
+		case MBEDTLS_MD_SHA224:
+			mbedtls_sha256(crt->raw.p, crt->raw.len, buffer, 1); /* last argument is a boolean, indicate to output sha-224 and not sha-256 */
 			hash_length = 28;
 			hash_alg_string="SHA-224";
 		break;
 
-		case POLARSSL_MD_SHA256:
-			sha256(crt->raw.p, crt->raw.len, buffer, 0);
+		case MBEDTLS_MD_SHA256:
+			mbedtls_sha256(crt->raw.p, crt->raw.len, buffer, 0);
 			hash_length = 32;
 			hash_alg_string="SHA-256";
 		break;
 
-		case POLARSSL_MD_SHA384:
-			sha512(crt->raw.p, crt->raw.len, buffer, 1); /* last argument is a boolean, indicate to output sha-384 and not sha-512 */
+		case MBEDTLS_MD_SHA384:
+			mbedtls_sha512(crt->raw.p, crt->raw.len, buffer, 1); /* last argument is a boolean, indicate to output sha-384 and not sha-512 */
 			hash_length = 48;
 			hash_alg_string="SHA-384";
 		break;
 
-		case POLARSSL_MD_SHA512:
-			sha512(crt->raw.p, crt->raw.len, buffer, 1); /* last argument is a boolean, indicate to output sha-384 and not sha-512 */
+		case MBEDTLS_MD_SHA512:
+			mbedtls_sha512(crt->raw.p, crt->raw.len, buffer, 1); /* last argument is a boolean, indicate to output sha-384 and not sha-512 */
 			hash_length = 64;
 			hash_alg_string="SHA-512";
 		break;
@@ -879,7 +879,7 @@ char *belle_sip_certificates_chain_get_fingerprint(belle_sip_certificates_chain_
 }
 
 static void belle_sip_certificates_chain_destroy(belle_sip_certificates_chain_t *certificate){
-	x509_crt_free(&certificate->cert);
+	mbedtls_x509_crt_free(&certificate->cert);
 }
 
 static void belle_sip_certificates_chain_clone(belle_sip_certificates_chain_t *certificate, const belle_sip_certificates_chain_t *orig){
@@ -895,17 +895,17 @@ BELLE_SIP_INSTANCIATE_VPTR(belle_sip_certificates_chain_t,belle_sip_object_t,bel
 belle_sip_signing_key_t* belle_sip_signing_key_parse(const char* buff, size_t size,const char* passwd) {
 	belle_sip_signing_key_t* signing_key = belle_sip_object_new(belle_sip_signing_key_t);
 	int err;
-	pk_init(&signing_key->key);
+	mbedtls_pk_init(&signing_key->key);
 	/* for API v1.3 or greater also parses public keys other than RSA */
-	err=pk_parse_key(&signing_key->key,(const unsigned char *)buff,size,(const unsigned char*)passwd,passwd?strlen(passwd):0);
+	err=mbedtls_pk_parse_key(&signing_key->key,(const unsigned char *)buff,size,(const unsigned char*)passwd,passwd?strlen(passwd):0);
 	/* make sure cipher is RSA to be consistent with API v1.2 */
-	if(err==0 && !pk_can_do(&signing_key->key,POLARSSL_PK_RSA))
-	err=POLARSSL_ERR_PK_TYPE_MISMATCH;
+	if(err==0 && !mbedtls_pk_can_do(&signing_key->key,MBEDTLS_PK_RSA))
+	err=MBEDTLS_ERR_PK_TYPE_MISMATCH;
 	if (err<0) {
 		char tmp[128];
-		error_strerror(err,tmp,sizeof(tmp));
+		mbedtls_strerror(err,tmp,sizeof(tmp));
 		belle_sip_error("cannot parse public key because [%s]",tmp);
-                pk_free(&signing_key->key);
+                mbedtls_pk_free(&signing_key->key);
 		belle_sip_object_unref(signing_key);
 		return NULL;
 	}
@@ -915,17 +915,17 @@ belle_sip_signing_key_t* belle_sip_signing_key_parse(const char* buff, size_t si
 belle_sip_signing_key_t* belle_sip_signing_key_parse_file(const char* path,const char* passwd) {
 	belle_sip_signing_key_t* signing_key = belle_sip_object_new(belle_sip_signing_key_t);
 	int err;
-	pk_init(&signing_key->key);
+	mbedtls_pk_init(&signing_key->key);
 	/* for API v1.3 or greater also parses public keys other than RSA */
-	err=pk_parse_keyfile(&signing_key->key,path, passwd);
+	err=mbedtls_pk_parse_keyfile(&signing_key->key,path, passwd);
 	/* make sure cipher is RSA to be consistent with API v1.2 */
-	if(err==0 && !pk_can_do(&signing_key->key,POLARSSL_PK_RSA))
-	err=POLARSSL_ERR_PK_TYPE_MISMATCH;
+	if(err==0 && !mbedtls_pk_can_do(&signing_key->key,MBEDTLS_PK_RSA))
+	err=MBEDTLS_ERR_PK_TYPE_MISMATCH;
 	if (err<0) {
 		char tmp[128];
-		error_strerror(err,tmp,sizeof(tmp));
+		mbedtls_strerror(err,tmp,sizeof(tmp));
 		belle_sip_error("cannot parse public key because [%s]",tmp);
-		pk_free(&signing_key->key);
+		mbedtls_pk_free(&signing_key->key);
 		belle_sip_object_unref(signing_key);
 		return NULL;
 	}
@@ -935,7 +935,7 @@ belle_sip_signing_key_t* belle_sip_signing_key_parse_file(const char* path,const
 
 
 static void belle_sip_signing_key_destroy(belle_sip_signing_key_t *signing_key){
-	pk_free(&signing_key->key);
+	mbedtls_pk_free(&signing_key->key);
 }
 
 static void belle_sip_signing_key_clone(belle_sip_signing_key_t *signing_key, const belle_sip_signing_key_t *orig){
