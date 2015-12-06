@@ -19,7 +19,6 @@
 #include "belle_sip_internal.h"
 #include "stream_channel.h"
 
-#ifdef HAVE_POLARSSL
 /* Uncomment to get very verbose polarssl logs*/
 //#define ENABLE_POLARSSL_LOGS
 #include <polarssl/ssl.h>
@@ -35,28 +34,23 @@
 #include <polarssl/sha256.h>
 #include <polarssl/sha512.h>
 #endif
-#endif
 
 
 struct belle_sip_certificates_chain {
 	belle_sip_object_t objet;
-#ifdef HAVE_POLARSSL
 #if POLARSSL_VERSION_NUMBER < 0x01030000
 	x509_cert cert;
 #else
 	x509_crt cert;
 #endif
-#endif
 };
 
 struct belle_sip_signing_key {
 	belle_sip_object_t objet;
-#ifdef HAVE_POLARSSL
 #if POLARSSL_VERSION_NUMBER < 0x01030000
 	rsa_context key;
 #else
 	pk_context key;
-#endif
 #endif
 };
 
@@ -70,8 +64,6 @@ char *belle_sip_signing_key_get_pem(belle_sip_signing_key_t *key) {
 	return NULL;
 }
 #endif
-
-#ifdef HAVE_POLARSSL
 
 /**
  * Retrieve key or certificate in a string(PEM format)
@@ -303,7 +295,6 @@ static int tls_process_handshake(belle_sip_channel_t *obj){
 }
 
 static int tls_process_http_connect(belle_sip_tls_channel_t *obj) {
-#ifdef HAVE_POLARSSL
 	char* request;
 	belle_sip_channel_t *channel = (belle_sip_channel_t *)obj;
 	int err;
@@ -338,9 +329,6 @@ static int tls_process_http_connect(belle_sip_tls_channel_t *obj) {
 		return -1;
 	}
 	return 0;
-#else
-	return -1
-#endif
 }
 static int tls_process_data(belle_sip_channel_t *obj,unsigned int revents){
 	belle_sip_tls_channel_t* channel=(belle_sip_tls_channel_t*)obj;
@@ -658,20 +646,6 @@ void belle_sip_tls_channel_set_client_certificate_key(belle_sip_tls_channel_t *c
 }
 
 
-#else /*HAVE_POLARSSL*/
-void belle_sip_tls_channel_set_client_certificates_chain(belle_sip_tls_channel_t *obj, belle_sip_certificates_chain_t* cert_chain) {
-	belle_sip_error("belle_sip_channel_set_client_certificate_chain requires TLS");
-}
-void belle_sip_tls_channel_set_client_certificate_key(belle_sip_tls_channel_t *obj, belle_sip_signing_key_t* key) {
-	belle_sip_error("belle_sip_channel_set_client_certificate_key requires TLS");
-}
-unsigned char *belle_sip_get_certificates_pem(belle_sip_certificates_chain_t *cert) {
-	return NULL;
-}
-unsigned char *belle_sip_get_key_pem(belle_sip_signing_key_t *key) {
-	return NULL;
-}
-#endif
 
 /**************************** belle_sip_certificates_chain_t **/
 
@@ -679,8 +653,6 @@ unsigned char *belle_sip_get_key_pem(belle_sip_signing_key_t *key) {
 
 
 static int belle_sip_certificate_fill(belle_sip_certificates_chain_t* certificate,const char* buff, size_t size,belle_sip_certificate_raw_format_t format) {
-#ifdef HAVE_POLARSSL
-
 	int err;
 #if POLARSSL_VERSION_NUMBER < 0x01030000
 	if ((err=x509parse_crt(&certificate->cert,(const unsigned char *)buff,size)) <0) {
@@ -693,14 +665,9 @@ static int belle_sip_certificate_fill(belle_sip_certificates_chain_t* certificat
 		return -1;
 	}
 	return 0;
-#else /*HAVE_POLARSSL*/
-	return -1;
-#endif
 }
 
 static int belle_sip_certificate_fill_from_file(belle_sip_certificates_chain_t* certificate,const char* path,belle_sip_certificate_raw_format_t format) {
-#ifdef HAVE_POLARSSL
-
 	int err;
 #if POLARSSL_VERSION_NUMBER < 0x01030000
 	if ((err=x509parse_crtfile(&certificate->cert, path)) <0) {
@@ -713,9 +680,6 @@ static int belle_sip_certificate_fill_from_file(belle_sip_certificates_chain_t* 
 		return -1;
 	}
 	return 0;
-#else /*HAVE_POLARSSL*/
-	return -1;
-#endif
 }
 
 /*belle_sip_certificate */
@@ -746,7 +710,6 @@ belle_sip_certificates_chain_t* belle_sip_certificates_chain_parse_file(const ch
  * Parse all *.pem files in a given dir(non recursively) and return the one matching the given subject
  */
 int belle_sip_get_certificate_and_pkey_in_dir(const char *path, const char *subject, belle_sip_certificates_chain_t **certificate, belle_sip_signing_key_t **pkey, belle_sip_certificate_raw_format_t format) {
-#ifdef HAVE_POLARSSL
 #if POLARSSL_VERSION_NUMBER < 0x01030000
 	return -1;
 #else /* POLARSSL_VERSION_NUMBER > 0x01030000 */
@@ -789,13 +752,9 @@ int belle_sip_get_certificate_and_pkey_in_dir(const char *path, const char *subj
 	}
 	return -1;
 #endif /* POLARSSL_VERSION_NUMBER >= 0x01030000 */
-#else /* ! HAVE_POLARSSL */
-	return -1;
-#endif
 }
 
 int belle_sip_generate_self_signed_certificate(const char* path, const char *subject, belle_sip_certificates_chain_t **certificate, belle_sip_signing_key_t **pkey) {
-#ifdef HAVE_POLARSSL
 #if POLARSSL_VERSION_NUMBER < 0x01030000
 	return -1;
 #else /* POLARSSL_VERSION_NUMBER < 0x01030000 */
@@ -929,14 +888,10 @@ int belle_sip_generate_self_signed_certificate(const char* path, const char *sub
 
 	return 0;
 #endif /* else POLARSSL_VERSION_NUMBER < 0x01030000 */
-#else /* ! HAVE_POLARSSL */
-	return -1;
-#endif
 }
 
 /* Note : this code is duplicated in mediastreamer2/src/voip/dtls_srtp.c but get directly a x509_crt as input parameter */
 char *belle_sip_certificates_chain_get_fingerprint(belle_sip_certificates_chain_t *certificate) {
-#ifdef HAVE_POLARSSL
 #if POLARSSL_VERSION_NUMBER < 0x01030000
 	return NULL;
 #else /* POLARSSL_VERSION_NUMBER < 0x01030000 */
@@ -1002,18 +957,13 @@ char *belle_sip_certificates_chain_get_fingerprint(belle_sip_certificates_chain_
 
 	return fingerprint;
 #endif /* else POLARSSL_VERSION_NUMBER < 0x01030000 */
-#else /* ! HAVE_POLARSSL */
-	return NULL;
-#endif
 }
 
 static void belle_sip_certificates_chain_destroy(belle_sip_certificates_chain_t *certificate){
-#ifdef HAVE_POLARSSL
 #if POLARSSL_VERSION_NUMBER < 0x01030000
 	x509_free(&certificate->cert);
 #else
 	x509_crt_free(&certificate->cert);
-#endif
 #endif
 }
 
@@ -1028,7 +978,6 @@ BELLE_SIP_INSTANCIATE_VPTR(belle_sip_certificates_chain_t,belle_sip_object_t,bel
 
 
 belle_sip_signing_key_t* belle_sip_signing_key_parse(const char* buff, size_t size,const char* passwd) {
-#ifdef HAVE_POLARSSL
 	belle_sip_signing_key_t* signing_key = belle_sip_object_new(belle_sip_signing_key_t);
 	int err;
 #if POLARSSL_VERSION_NUMBER < 0x01030000
@@ -1052,13 +1001,9 @@ belle_sip_signing_key_t* belle_sip_signing_key_parse(const char* buff, size_t si
 		return NULL;
 	}
 	return signing_key;
-#else /*HAVE_POLARSSL*/
-	return NULL;
-#endif
 }
 
 belle_sip_signing_key_t* belle_sip_signing_key_parse_file(const char* path,const char* passwd) {
-#ifdef HAVE_POLARSSL
 	belle_sip_signing_key_t* signing_key = belle_sip_object_new(belle_sip_signing_key_t);
 	int err;
 #if POLARSSL_VERSION_NUMBER < 0x01030000
@@ -1083,19 +1028,14 @@ belle_sip_signing_key_t* belle_sip_signing_key_parse_file(const char* path,const
 	}
 
 	return signing_key;
-#else /*HAVE_POLARSSL*/
-	return NULL;
-#endif
 }
 
 
 static void belle_sip_signing_key_destroy(belle_sip_signing_key_t *signing_key){
-#ifdef HAVE_POLARSSL
 #if POLARSSL_VERSION_NUMBER < 0x01030000
 	rsa_free(&signing_key->key);
 #else
 	pk_free(&signing_key->key);
-#endif
 #endif
 }
 

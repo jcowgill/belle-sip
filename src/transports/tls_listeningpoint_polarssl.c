@@ -18,10 +18,6 @@
 
 #include "belle_sip_internal.h"
 
-#ifdef HAVE_POLARSSL
-
-#include <polarssl/ssl.h>
-
 static void belle_sip_tls_listening_point_uninit(belle_sip_tls_listening_point_t *lp){
 	belle_sip_object_unref(lp->verify_ctx);
 }
@@ -100,24 +96,4 @@ int belle_sip_tls_listening_point_set_verify_policy(belle_sip_tls_listening_poin
 int belle_sip_tls_listening_point_available(void){
 	return TRUE;
 }
-
-#else
-
-belle_sip_listening_point_t * belle_sip_tls_listening_point_new(belle_sip_stack_t *s, const char *ipaddress, int port){
-	return NULL;
-}
-
-int belle_sip_tls_listening_point_set_root_ca(belle_sip_tls_listening_point_t *s, const char *path){
-	return -1;
-}
-
-int belle_sip_tls_listening_point_set_verify_exceptions(belle_sip_tls_listening_point_t *s, int value){
-	return -1;
-}
-
-int belle_sip_tls_listening_point_available(void){
-	return FALSE;
-}
-
-#endif
 
