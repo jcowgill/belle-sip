@@ -2401,10 +2401,10 @@ int dns_a_parse(struct dns_a *a, struct dns_rr *rr, struct dns_packet *P) {
 	if (rr->rd.len != 4)
 		return DNS_EILLEGAL;
 
-	addr	= ((0xff & P->data[rr->rd.p + 0]) << 24)
-		| ((0xff & P->data[rr->rd.p + 1]) << 16)
-		| ((0xff & P->data[rr->rd.p + 2]) << 8)
-		| ((0xff & P->data[rr->rd.p + 3]) << 0);
+	addr	= ((0xffU & P->data[rr->rd.p + 0]) << 24)
+		| ((0xffU & P->data[rr->rd.p + 1]) << 16)
+		| ((0xffU & P->data[rr->rd.p + 2]) << 8)
+		| ((0xffU & P->data[rr->rd.p + 3]) << 0);
 
 	a->addr.s_addr	= htonl(addr);
 
