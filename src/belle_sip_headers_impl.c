@@ -1680,7 +1680,7 @@ BELLESIP_EXPORT time_t belle_sip_header_date_get_time(belle_sip_header_date_t *o
 
 
 	/* time headers are in GMT as spec says */
-	sscanf(obj->date,"%3c,%d %16s %d %d:%d:%d",tmp1,&ret.tm_mday,tmp2,
+	sscanf(obj->date,"%3c,%d %15s %d %d:%d:%d",tmp1,&ret.tm_mday,tmp2,
 		&ret.tm_year,&ret.tm_hour,&ret.tm_min,&ret.tm_sec);
 	ret.tm_year-=1900;
 	for(i=0;i<7;i++) {
