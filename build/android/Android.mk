@@ -73,8 +73,8 @@ LOCAL_SRC_FILES := \
 	bodyhandler.c \
 	transports/stream_channel.c \
 	transports/stream_listeningpoint.c \
-	transports/tls_channel_polarssl.c \
-	transports/tls_listeningpoint_polarssl.c \
+	transports/tls_channel_mbedtls.c \
+	transports/tls_listeningpoint_mbedtls.c \
 	transports/udp_channel.c \
 	transports/udp_listeningpoint.c \
 	wakelock.c
@@ -100,9 +100,9 @@ LOCAL_STATIC_LIBRARIES := \
 	antlr3 
 
 ifeq ($(BUILD_TLS),1)
-LOCAL_STATIC_LIBRARIES += polarssl
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../externals/polarssl/include
-LOCAL_CFLAGS += -DHAVE_POLARSSL=1
+LOCAL_STATIC_LIBRARIES += mbedcrypto mbedx509 mbedtls
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../externals/mbedtls/include
+LOCAL_CFLAGS += -DHAVE_MBEDTLS=1
 endif
 
 include $(BUILD_STATIC_LIBRARY)	

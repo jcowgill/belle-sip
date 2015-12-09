@@ -9,7 +9,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "antlr3c", "..\..\..\..\antl
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cunit", "..\..\..\..\cunit\build\windows10\cunit\cunit.vcxproj", "{025E28A8-9DFB-4015-AD56-19896AA6CC9B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "polarssl", "..\..\..\..\polarssl\build\windows10\polarssl\polarssl.vcxproj", "{88768DD9-5110-4AC8-8B0E-41CD7713E1A2}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mbedtls", "..\..\..\..\mbedtls\build\windows10\mbedtls\mbedtls.vcxproj", "{88768DD9-5110-4AC8-8B0E-41CD7713E1A2}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "belle-sip", "..\belle-sip\belle-sip.vcxproj", "{B6CDF482-7DA3-43D4-9B12-70150106C191}"
 EndProject

@@ -7,7 +7,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libantlr3c", "..\..\..\..\a
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tunnel", "..\..\..\..\tunnel\build\wp8\tunnel\tunnel.vcxproj", "{59500DD1-B192-4DDF-A402-8A8E3739E032}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "polarssl", "..\..\..\..\polarssl\build\wp8\polarssl\polarssl.vcxproj", "{E9F8C5D1-13A2-46B6-A9BC-878030D4BE09}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mbedtls", "..\..\..\..\mbedtls\build\wp8\mbedtls\mbedtls.vcxproj", "{E9F8C5D1-13A2-46B6-A9BC-878030D4BE09}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

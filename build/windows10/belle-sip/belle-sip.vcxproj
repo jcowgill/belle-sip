@@ -115,8 +115,8 @@
     <ClCompile Include="..\..\..\src\transaction.c" />
     <ClCompile Include="..\..\..\src\transports\stream_channel.c" />
     <ClCompile Include="..\..\..\src\transports\stream_listeningpoint.c" />
-    <ClCompile Include="..\..\..\src\transports\tls_channel_polarssl.c" />
-    <ClCompile Include="..\..\..\src\transports\tls_listeningpoint_polarssl.c" />
+    <ClCompile Include="..\..\..\src\transports\tls_channel_mbedtls.c" />
+    <ClCompile Include="..\..\..\src\transports\tls_listeningpoint_mbedtls.c" />
     <ClCompile Include="..\..\..\src\transports\udp_channel.c" />
     <ClCompile Include="..\..\..\src\transports\udp_listeningpoint.c" />
   </ItemGroup>
@@ -124,7 +124,7 @@
     <ProjectReference Include="..\..\..\..\antlr3\runtime\C\build\windows10\antlr3c\antlr3c.vcxproj">
       <Project>{01ccccc9-ca0c-4528-92bc-5b8be1d02d6d}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\..\polarssl\build\windows10\polarssl\polarssl.vcxproj">
+    <ProjectReference Include="..\..\..\..\mbedtls\build\windows10\mbedtls\mbedtls.vcxproj">
       <Project>{88768dd9-5110-4ac8-8b0e-41cd7713e1a2}</Project>
     </ProjectReference>
   </ItemGroup>
@@ -187,8 +187,8 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <CompileAsWinRT>false</CompileAsWinRT>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\include;$(ProjectDir)..\..\..\src;$(ProjectDir)..\..\..\..\antlr3\runtime\C\include;$(ProjectDir)..\..\..\..\polarssl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;HAVE_POLARSSL;HAVE_ANTLR_STRING_STREAM_NEW;HAVE_COMPILER_TLS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;USE_FIXED_NAMESERVERS;USE_GETADDRINFO_FALLBACK;ENABLE_SERVER_SOCKETS;BELLESIP_EXPORTS;BELLESIP_INTERNAL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\include;$(ProjectDir)..\..\..\src;$(ProjectDir)..\..\..\..\antlr3\runtime\C\include;$(ProjectDir)..\..\..\..\mbedtls\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;HAVE_MBEDTLS;HAVE_ANTLR_STRING_STREAM_NEW;HAVE_COMPILER_TLS;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;USE_FIXED_NAMESERVERS;USE_GETADDRINFO_FALLBACK;ENABLE_SERVER_SOCKETS;BELLESIP_EXPORTS;BELLESIP_INTERNAL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4068;4129</DisableSpecificWarnings>
     </ClCompile>
     <Link>

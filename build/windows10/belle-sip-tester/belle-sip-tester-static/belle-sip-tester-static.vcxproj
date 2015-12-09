@@ -100,7 +100,7 @@
       <CompileAsWinRT>false</CompileAsWinRT>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>HAVE_CONFIG_H;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;BC_CONFIG_FILE="config.h";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\..\include;$(ProjectDir)..\..\..\..\src;$(ProjectDir)..\..\..\..\tester;$(ProjectDir)..\..\..\..\tester\common;$(ProjectDir)..\..\belle-sip;$(ProjectDir)..\..\..\..\..\cunit\build\windows10\cunit\$(Platform)\$(Configuration);$(ProjectDir)..\..\..\..\..\polarssl\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\..\include;$(ProjectDir)..\..\..\..\src;$(ProjectDir)..\..\..\..\tester;$(ProjectDir)..\..\..\..\tester\common;$(ProjectDir)..\..\belle-sip;$(ProjectDir)..\..\..\..\..\cunit\build\windows10\cunit\$(Platform)\$(Configuration);$(ProjectDir)..\..\..\..\..\mbedtls\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
