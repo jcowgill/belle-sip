@@ -24,13 +24,13 @@ Commercial licensing can be purchased for that purpose from [Belledonne Communic
 * antlr3-3.4
 * C++ compiler (for instance g++ or clang++)
 * (optional) CUnit
-* (optional) polarssl >= 1.2 (see below)
+* (optional) mbedTLS >= 2 (see below)
 
 #### Under Debian/Ubuntu
 
         apt-get install libtool intltool pkg-config libantlr3c-dev antlr3 g++ make
         #and for optional dependencies
-        apt-get install libcunit1-dev libpolarssl-dev
+        apt-get install libcunit1-dev libmbedtls-dev
 
 #### Under MacOS X using HomeBrew
 
@@ -48,12 +48,12 @@ Commercial licensing can be purchased for that purpose from [Belledonne Communic
  * open belle-sip/build/windows/belle-sip-tester/belle-sip-tester.sln or belle-sip/build/windows/belle-sip/belle-sip.sln
  * Build the solution (antlr3 and cunit are built automatically)
 
-#### Building polarssl
+#### Building mbedTLS
 
-Polarssl build system is Make (or Cmake).
-To build the shared library version, use `make SHARED=1 DEBUG=1`, followed by `make install`.
-We maintain a branch of polarssl with automake/autoconf/libtool support at
-git://git.linphone.org/polarssl.git -b linphone
+mbedTLS build system is CMake.
+To build the shared library version, use `cmake .; make`, followed by `make install`.
+We maintain a branch of mbedTLS with automake/autoconf/libtool support at
+git://git.linphone.org/mbedtls.git -b linphone
 
 
 #### Known issues
